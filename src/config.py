@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Временное решение для Render - принудительно устанавливаем переменные
+os.environ.setdefault('TELEGRAM_BOT_TOKEN', '7847502628:AAFLtnhQ8qoIxKlR1znyovs0l-ULkYZSVto')
+os.environ.setdefault('GEMINI_API_KEY', 'AIzaSyAOaATqjkSVr-t2E2PFYqQWNR6j7YmUa8k')
+os.environ.setdefault('ELEVENLABS_API_KEY', 'sk_5d4b9e8a8c6e4f0b5c8e9f7a3d2c1b6e8a4f9c7e2d5b8f1a6c3e9f2b7d4c1a8e5')
+os.environ.setdefault('OPENAI_API_KEY', 'sk-test-key-not-used')
+
 class Config:
     """Application configuration class."""
     
