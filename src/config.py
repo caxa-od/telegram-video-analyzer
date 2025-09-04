@@ -1,4 +1,8 @@
-"""Configuration settings for the Telegram Video Analyzer Bot."""
+"""Config# Дебаг для проверки Environment Variables
+print("🔧 DEBUG: Checking environment variables...")
+print(f"🔑 DEBUG: TELEGRAM_BOT_TOKEN = {os.environ.get('TELEGRAM_BOT_TOKEN', 'NOT_SET')[:20]}...")
+print(f"🔑 DEBUG: GEMINI_API_KEY = {os.environ.get('GEMINI_API_KEY', 'NOT_SET')[:20]}...")
+print(f"🔑 DEBUG: ELEVENLABS_API_KEY = {os.environ.get('ELEVENLABS_API_KEY', 'NOT_SET')[:20]}...")settings for the Telegram Video Analyzer Bot."""
 
 import os
 from pathlib import Path
