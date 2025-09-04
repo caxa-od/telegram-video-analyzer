@@ -245,7 +245,6 @@ class Config:
         required_vars = [
             'TELEGRAM_BOT_TOKEN',
             'GEMINI_API_KEY',
-            'OPENAI_API_KEY',
             'ELEVENLABS_API_KEY'
         ]
         
