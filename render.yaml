@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: telegram-video-analyzer
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    plan: free
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: MAX_VIDEO_SIZE_MB
+        value: "20"
+      - key: MAX_FRAMES_PER_VIDEO
+        value: "20"
+      - key: FRAME_INTERVAL_SECONDS
+        value: "5"
+      - key: LOG_LEVEL
+        value: "INFO"
