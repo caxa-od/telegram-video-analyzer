@@ -22,7 +22,7 @@
 
 1. **Клонируйте проект:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/caxa-od/telegram-video-analyzer.git
    cd telegram-video-analyzer
    ```
 
