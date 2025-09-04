@@ -166,7 +166,7 @@ class TelegramVideoAnalyzerBot:
             )
             
             # Keep running
-            logger.info("🤖 Bot is running! Press Ctrl+C to stop.")
+            logger.info("🤖 Bot is running successfully! Press Ctrl+C to stop.")
             try:
                 while True:
                     await asyncio.sleep(1)
