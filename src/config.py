@@ -8,10 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Временное решение для Render - принудительно устанавливаем переменные
+print("🔧 DEBUG: Setting API keys directly in code...")
 os.environ.setdefault('TELEGRAM_BOT_TOKEN', '7847502628:AAFLtnhQ8qoIxKlR1znyovs0l-ULkYZSVto')
 os.environ.setdefault('GEMINI_API_KEY', 'AIzaSyAOaATqjkSVr-t2E2PFYqQWNR6j7YmUa8k')
 os.environ.setdefault('ELEVENLABS_API_KEY', 'sk_5d4b9e8a8c6e4f0b5c8e9f7a3d2c1b6e8a4f9c7e2d5b8f1a6c3e9f2b7d4c1a8e5')
 os.environ.setdefault('OPENAI_API_KEY', 'sk-test-key-not-used')
+print(f"🔑 DEBUG: TELEGRAM_BOT_TOKEN = {os.environ.get('TELEGRAM_BOT_TOKEN')[:20]}...")
+print(f"🔑 DEBUG: GEMINI_API_KEY = {os.environ.get('GEMINI_API_KEY')[:20]}...")
 
 class Config:
     """Application configuration class."""
