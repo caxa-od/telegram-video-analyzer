@@ -159,12 +159,12 @@ class Config:
     
     GPT_SCRIPT_PROMPTS = {
         'ru': """
-        Сделай мне сценарий для озвучки этого видео длиною {duration}, примерно на {character_count} символов. 
-        Видео должно быть душевным и трогательным. 
+        Сделай мне сценарий для озвучки от 3-го лица этого видео длиною {duration}, примерно на {character_count} символов. 
+        Видео должно быть душевным и трогательным. Видео должно начинаться с крутого лука который должен удерживать интригу до самого конца видео. 
         
         Также дай мне отдельно:
-        1. Три варианта заголовка
-        2. Подбери 3 высокочастотных ключевых слова
+        1. Три варианта заголовка, они должны быть провокационным, вызывать чувство любопытства и желание досмотреть видео до конца. 
+        2. Подбери 3 ключевых слова на основе происходящего в видео они должны точно соответствовать теме видео и не быть расплывчатыми или общими по смыслу. 
         
         Описание видео для анализа:
         {video_description}
@@ -185,12 +185,12 @@ class Config:
         3. [Ключевое слово 3]
         """,
         'en': """
-        Create a voice-over script for this video of {duration} duration, approximately {character_count} characters. 
-        The video should be heartfelt and touching.
+        Create a third-person voice-over script for this video of {duration} duration, approximately {character_count} characters. 
+        The video should be heartfelt and touching. The video must start with a compelling hook that maintains intrigue until the very end of the video.
         
         Also provide separately:
-        1. Three title options
-        2. Pick 3 high-frequency keywords
+        1. Three title options that should be provocative, evoke curiosity and the desire to watch the video to the end.
+        2. Pick 3 keywords based on what happens in the video - they should accurately match the video theme and not be vague or general in meaning.
         
         Video description for analysis:
         {video_description}
@@ -198,7 +198,7 @@ class Config:
         Response structure:
         
         🎙️ **VOICE-OVER SCRIPT:**
-        [Text script for video voice-over, exactly {character_count} characters]
+        [Third-person text script for video voice-over, exactly {character_count} characters]
         
         📺 **TITLE OPTIONS:**
         1. [Title 1]
@@ -211,12 +211,12 @@ class Config:
         3. [Keyword 3]
         """,
         'es': """
-        Crea un guión de narración para este video de {duration} de duración, aproximadamente {character_count} caracteres.
-        El video debe ser emotivo y conmovedor.
+        Crea un guión de narración en tercera persona para este video de {duration} de duración, aproximadamente {character_count} caracteres.
+        El video debe ser emotivo y conmovedor. El video debe comenzar con un gancho compelling que mantenga la intriga hasta el final del video.
         
         También proporciona por separado:
-        1. Tres opciones de título
-        2. Elige 3 palabras clave de alta frecuencia
+        1. Tres opciones de título que deben ser provocativos, evocar curiosidad y el deseo de ver el video hasta el final.
+        2. Elige 3 palabras clave basadas en lo que sucede en el video - deben coincidir exactamente con el tema del video y no ser vagas o generales en significado.
         
         Descripción de video para análisis:
         {video_description}
@@ -224,7 +224,7 @@ class Config:
         Estructura de respuesta:
         
         🎙️ **GUIÓN DE NARRACIÓN:**
-        [Guión de texto para narración de video, exactamente {character_count} caracteres]
+        [Guión de texto en tercera persona para narración de video, exactamente {character_count} caracteres]
         
         📺 **OPCIONES DE TÍTULO:**
         1. [Título 1]
