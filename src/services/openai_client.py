@@ -76,6 +76,7 @@ class OpenAIClient:
             
             # Get language-specific prompt
             prompt_template = Config.get_gpt_script_prompt(language)
+            
             prompt = prompt_template.format(
                 duration=duration_str,
                 character_count=character_count,

@@ -174,9 +174,22 @@ class VoiceHandler:
                 logger.warning("No script content found for synthesis")
                 return None
             
-            # Limit length for TTS
-            if len(clean_script) > 3000:
-                clean_script = clean_script[:3000] + "..."
+            # Limit length for TTS with smarter truncation
+            if len(clean_script) > 4000:
+                # Try to find a good break point near the limit
+                truncated = clean_script[:4000]
+                last_sentence = max(
+                    truncated.rfind('.'),
+                    truncated.rfind('!'),
+                    truncated.rfind('?')
+                )
+                if last_sentence > 3500:  # Only truncate at sentence if it's not too short
+                    clean_script = truncated[:last_sentence + 1]
+                else:
+                    clean_script = truncated + "..."
+                logger.info(f"Script truncated from original length to {len(clean_script)} characters")
+            else:
+                logger.info(f"Script length: {len(clean_script)} characters, proceeding with full synthesis")
             
             logger.info(f"Synthesizing script: {clean_script[:100]}...")
             

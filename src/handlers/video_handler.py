@@ -1,6 +1,7 @@
 """Telegram bot handlers for video processing."""
 
 import logging
+import asyncio
 from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from pathlib import Path
@@ -124,17 +125,12 @@ class VideoAnalysisHandler:
             # Update progress
             await processing_msg.edit_text("✅ Готово! Отправляю результаты...")
             
-            # Send analysis result
-            await message.reply_text(
-                f"🎬 **АНАЛИЗ ВИДЕО**\n\n{analysis_result}",
-                parse_mode=None  # Disable Markdown parsing to avoid errors
-            )
+            # Send analysis result in separate blocks
+            await self._send_analysis_blocks(message, analysis_result)
             
             # Send YouTube script
-            await message.reply_text(
-                f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}",
-                parse_mode=None  # Disable Markdown parsing to avoid errors
-            )
+            script_message = f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}"
+            await message.reply_text(script_message, parse_mode=None)
             
             # Generate voice synthesis for the script
             await processing_msg.edit_text("🎙️ Создаю озвучку сценария...")
@@ -355,8 +351,12 @@ class VideoAnalysisHandler:
                     line.startswith("🔑") or
                     line.startswith("**ВАРИАНТЫ ЗАГОЛОВКОВ") or
                     line.startswith("**КЛЮЧЕВЫЕ СЛОВА") or
+                    line.startswith("**TITLE OPTIONS") or
+                    line.startswith("**KEYWORDS") or
                     ("ЗАГОЛОВКОВ" in line and "ВАРИАНТЫ" in line) or
-                    ("КЛЮЧЕВЫЕ" in line and "СЛОВА" in line)
+                    ("КЛЮЧЕВЫЕ" in line and "СЛОВА" in line) or
+                    ("TITLE" in line and "OPTIONS" in line) or
+                    ("KEYWORDS" in line)
                 ):
                     break
                     
@@ -365,7 +365,8 @@ class VideoAnalysisHandler:
                     if (len(line) > 0 and 
                         not line.startswith('[') and 
                         not line.startswith('**') and
-                        not line.startswith('#')):
+                        not line.startswith('#') and
+                        not line == "---"):
                         script_content.append(line)
             
             # Join script content
@@ -378,9 +379,19 @@ class VideoAnalysisHandler:
                 logger.warning("No script content found for synthesis")
                 return None
             
-            # Limit length for TTS (reduced due to quota limits)
-            if len(clean_script) > 300:
-                clean_script = clean_script[:300] + "..."
+            # Limit length for TTS (moderate limit for better quality)
+            if len(clean_script) > 1000:
+                # Try to find a good break point near the limit
+                truncated = clean_script[:1000]
+                last_sentence = max(
+                    truncated.rfind('.'),
+                    truncated.rfind('!'),
+                    truncated.rfind('?')
+                )
+                if last_sentence > 800:  # Only truncate at sentence if it's not too short
+                    clean_script = truncated[:last_sentence + 1]
+                else:
+                    clean_script = truncated + "..."
             
             logger.info(f"Extracted script for synthesis ({len(clean_script)} chars): {clean_script[:100]}...")
             logger.debug(f"Full extracted script: {clean_script}")
@@ -395,6 +406,57 @@ class VideoAnalysisHandler:
         except Exception as e:
             logger.error(f"Error synthesizing script: {e}")
             return None
+    
+    async def _send_analysis_blocks(self, message: Message, analysis_result: str) -> None:
+        """
+        Send analysis result as separate blocks.
+        
+        Args:
+            message: Telegram message object to reply to
+            analysis_result: Full analysis text to split into blocks
+        """
+        try:
+            # Split the analysis into blocks based on headers
+            blocks = []
+            
+            # Find each section by its header
+            sections = [
+                ("📋 **ОБЩЕЕ ОПИСАНИЕ:**", "⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**"),
+                ("⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**", "🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**"),
+                ("🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**", "📝 **ЗАКЛЮЧЕНИЕ:**"),
+                ("📝 **ЗАКЛЮЧЕНИЕ:**", None)
+            ]
+            
+            for start_marker, end_marker in sections:
+                start_pos = analysis_result.find(start_marker)
+                if start_pos != -1:
+                    if end_marker:
+                        end_pos = analysis_result.find(end_marker)
+                        if end_pos != -1:
+                            block_text = analysis_result[start_pos:end_pos].strip()
+                        else:
+                            block_text = analysis_result[start_pos:].strip()
+                    else:
+                        block_text = analysis_result[start_pos:].strip()
+                    
+                    if block_text:
+                        blocks.append(block_text)
+            
+            # If no blocks found, send as single message
+            if not blocks:
+                await message.reply_text(f"🎬 **АНАЛИЗ ВИДЕО**\n\n{analysis_result}", parse_mode=None)
+                return
+            
+            # Send each block as separate message
+            for block in blocks:
+                await message.reply_text(block, parse_mode=None)
+                # Small delay to avoid spam protection
+                await asyncio.sleep(0.5)
+                
+        except Exception as e:
+            logger.error(f"Error sending analysis blocks: {e}")
+            # Fallback to single message
+            await message.reply_text(f"🎬 **АНАЛИЗ ВИДЕО**\n\n{analysis_result}", parse_mode=None)
 
 class MessageHandler:
     """Handler for different types of messages."""

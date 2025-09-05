@@ -82,7 +82,8 @@ class VideoProcessor:
                     frames.append(pil_image)
                     extracted_count += 1
                     
-                    logger.debug(f"Extracted frame {extracted_count} at {frame_count/fps:.2f}s")
+                    time_stamp = frame_count / fps
+                    logger.info(f"Extracted frame {extracted_count} at {time_stamp:.2f}s")
                 
                 frame_count += 1
             
