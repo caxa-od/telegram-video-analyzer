@@ -127,7 +127,12 @@ class VideoAnalysisHandler:
             )
             
             # Validate and correct script length
-            await processing_msg.edit_text("🔍 Проверяю длину сценария...")
+            if user_language == 'en':
+                await processing_msg.edit_text("🔍 Checking script length...")
+            elif user_language == 'es':
+                await processing_msg.edit_text("🔍 Verificando longitud del guión...")
+            else:
+                await processing_msg.edit_text("🔍 Проверяю длину сценария...")
             
             # Extract clean script content for validation
             script_content = self.openai_client.extract_script_content(youtube_script)
@@ -137,7 +142,12 @@ class VideoAnalysisHandler:
             
             while not self.openai_client.validate_script_length(script_content) and correction_attempts < max_attempts:
                 correction_attempts += 1
-                await processing_msg.edit_text(f"✏️ Корректирую текст до нужной длины... (попытка {correction_attempts}/{max_attempts})")
+                if user_language == 'en':
+                    await processing_msg.edit_text(f"✏️ Adjusting text to optimal length... (attempt {correction_attempts}/{max_attempts})")
+                elif user_language == 'es':
+                    await processing_msg.edit_text(f"✏️ Ajustando texto a longitud óptima... (intento {correction_attempts}/{max_attempts})")
+                else:
+                    await processing_msg.edit_text(f"✏️ Корректирую текст до нужной длины... (попытка {correction_attempts}/{max_attempts})")
                 
                 # Ask GPT to correct the length
                 corrected_content = await self.openai_client.correct_script_length(
@@ -180,13 +190,23 @@ class VideoAnalysisHandler:
             script_length_valid = self.openai_client.validate_script_length(script_content)
             
             # Update progress
-            await processing_msg.edit_text("✅ Готово! Отправляю результаты...")
+            if user_language == 'en':
+                await processing_msg.edit_text("✅ Done! Sending results...")
+            elif user_language == 'es':
+                await processing_msg.edit_text("✅ ¡Listo! Enviando resultados...")
+            else:
+                await processing_msg.edit_text("✅ Готово! Отправляю результаты...")
             
             # Send analysis result in separate blocks
             await self._send_analysis_blocks(message, analysis_result, user_language)
             
             # Send YouTube script
-            script_message = f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}"
+            if user_language == 'en':
+                script_message = f"🎙️ **YOUTUBE SHORTS SCRIPT**\n\n{youtube_script}"
+            elif user_language == 'es':
+                script_message = f"🎙️ **GUIÓN PARA YOUTUBE SHORTS**\n\n{youtube_script}"
+            else:
+                script_message = f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}"
             await message.reply_text(script_message, parse_mode=None)
             
             # Send warning if length validation failed
@@ -201,7 +221,12 @@ class VideoAnalysisHandler:
                 await message.reply_text(warning_message)
             
             # Generate voice synthesis for the script
-            await processing_msg.edit_text("🎙️ Создаю озвучку сценария...")
+            if user_language == 'en':
+                await processing_msg.edit_text("🎙️ Creating voice-over...")
+            elif user_language == 'es':
+                await processing_msg.edit_text("🎙️ Creando narración...")
+            else:
+                await processing_msg.edit_text("🎙️ Создаю озвучку сценария...")
             
             try:
                 # Extract and synthesize script content
