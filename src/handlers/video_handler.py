@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+import re
 from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from pathlib import Path
@@ -125,6 +126,59 @@ class VideoAnalysisHandler:
                 analysis_result, video_duration, user_language
             )
             
+            # Validate and correct script length
+            await processing_msg.edit_text("🔍 Проверяю длину сценария...")
+            
+            # Extract clean script content for validation
+            script_content = self.openai_client.extract_script_content(youtube_script)
+            script_length_valid = False
+            correction_attempts = 0
+            max_attempts = 2
+            
+            while not self.openai_client.validate_script_length(script_content) and correction_attempts < max_attempts:
+                correction_attempts += 1
+                await processing_msg.edit_text(f"✏️ Корректирую текст до нужной длины... (попытка {correction_attempts}/{max_attempts})")
+                
+                # Ask GPT to correct the length
+                corrected_content = await self.openai_client.correct_script_length(
+                    script_content, len(script_content), 700, 900, user_language
+                )
+                
+                # Update script content
+                script_content = corrected_content
+                
+                # Rebuild full script with corrected content
+                if user_language == 'ru':
+                    header = "🎙️ **СЦЕНАРИЙ ДЛЯ ОЗВУЧКИ:**"
+                elif user_language == 'en':
+                    header = "🎙️ **VOICE-OVER SCRIPT:**"
+                else:
+                    header = "🎙️ **GUIÓN DE NARRACIÓN:**"
+                
+                # Extract other parts (titles, keywords) from original script
+                title_section = ""
+                keywords_section = ""
+                
+                if "📺" in youtube_script:
+                    title_match = re.search(r'(📺.*?)(?=🔑|$)', youtube_script, re.DOTALL)
+                    if title_match:
+                        title_section = title_match.group(1).strip()
+                
+                if "🔑" in youtube_script:
+                    keywords_match = re.search(r'(🔑.*?)$', youtube_script, re.DOTALL)
+                    if keywords_match:
+                        keywords_section = keywords_match.group(1).strip()
+                
+                # Reconstruct full script
+                youtube_script = f"{header}\n{script_content}"
+                if title_section:
+                    youtube_script += f"\n\n{title_section}"
+                if keywords_section:
+                    youtube_script += f"\n\n{keywords_section}"
+            
+            # Check if length validation was successful
+            script_length_valid = self.openai_client.validate_script_length(script_content)
+            
             # Update progress
             await processing_msg.edit_text("✅ Готово! Отправляю результаты...")
             
@@ -134,6 +188,17 @@ class VideoAnalysisHandler:
             # Send YouTube script
             script_message = f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}"
             await message.reply_text(script_message, parse_mode=None)
+            
+            # Send warning if length validation failed
+            if not script_length_valid:
+                warning_message = (
+                    "⚠️ GPT не смог точно подогнать длину текста, но сценарий готов к озвучке"
+                    if user_language == 'ru' else
+                    "⚠️ GPT couldn't adjust text length precisely, but the script is ready for voice synthesis"
+                    if user_language == 'en' else
+                    "⚠️ GPT no pudo ajustar la longitud del texto con precisión, pero el guión está listo para síntesis de voz"
+                )
+                await message.reply_text(warning_message)
             
             # Generate voice synthesis for the script
             await processing_msg.edit_text("🎙️ Создаю озвучку сценария...")
