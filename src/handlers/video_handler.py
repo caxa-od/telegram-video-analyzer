@@ -46,12 +46,15 @@ class VideoAnalysisHandler:
                 return
             
             # Check video size
+            file_size_mb = round(video.file_size / (1024 * 1024), 1)
+            max_size_mb = Config.MAX_VIDEO_SIZE_MB
+            logger.info(f"Video file size: {file_size_mb} MB, max allowed: {max_size_mb} MB")
+            
             if video.file_size > Config.MAX_VIDEO_SIZE_MB * 1024 * 1024:
-                file_size_mb = round(video.file_size / (1024 * 1024), 1)
                 await message.reply_text(
                     f"❌ Видео слишком большое!\n\n"
                     f"📏 Размер вашего видео: {file_size_mb} МБ\n"
-                    f"📐 Максимальный размер: {Config.MAX_VIDEO_SIZE_MB} МБ\n\n"
+                    f"📐 Максимальный размер: {max_size_mb} МБ\n\n"
                     f"💡 Что можно сделать:\n"
                     f"• Сжать видео с помощью любого видеоредактора\n"
                     f"• Уменьшить разрешение видео\n"
@@ -126,7 +129,7 @@ class VideoAnalysisHandler:
             await processing_msg.edit_text("✅ Готово! Отправляю результаты...")
             
             # Send analysis result in separate blocks
-            await self._send_analysis_blocks(message, analysis_result)
+            await self._send_analysis_blocks(message, analysis_result, user_language)
             
             # Send YouTube script
             script_message = f"🎙️ **СЦЕНАРИЙ ДЛЯ YOUTUBE SHORTS**\n\n{youtube_script}"
@@ -175,6 +178,8 @@ class VideoAnalysisHandler:
             
         except Exception as e:
             logger.error(f"Error handling video: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error details: {repr(e)}")
             try:
                 await message.reply_text(
                     f"❌ Произошла ошибка при обработке видео:\n{str(e)}"
@@ -360,13 +365,15 @@ class VideoAnalysisHandler:
                 ):
                     break
                     
-                # Collect script content (skip empty lines and format markers)
+                # Collect script content (be more permissive with content)
                 if in_script_section:
                     if (len(line) > 0 and 
-                        not line.startswith('[') and 
-                        not line.startswith('**') and
-                        not line.startswith('#') and
-                        not line == "---"):
+                        not line.startswith('🎙️') and  # Skip the header itself
+                        not line.startswith('📺') and  # Skip title section headers
+                        not line.startswith('🔑') and  # Skip keywords section headers
+                        not line == "---" and          # Skip separator lines
+                        not (line.startswith('[') and line.endswith(']') and len(line) < 50)  # Skip only short bracketed instructions
+                    ):
                         script_content.append(line)
             
             # Join script content
@@ -380,15 +387,15 @@ class VideoAnalysisHandler:
                 return None
             
             # Limit length for TTS (moderate limit for better quality)
-            if len(clean_script) > 1000:
+            if len(clean_script) > 2000:  # Increased from 1000 to 2000 characters
                 # Try to find a good break point near the limit
-                truncated = clean_script[:1000]
+                truncated = clean_script[:2000]  # Increased from 1000 to 2000
                 last_sentence = max(
                     truncated.rfind('.'),
                     truncated.rfind('!'),
                     truncated.rfind('?')
                 )
-                if last_sentence > 800:  # Only truncate at sentence if it's not too short
+                if last_sentence > 1600:  # Increased from 800 to 1600 (Only truncate at sentence if it's not too short)
                     clean_script = truncated[:last_sentence + 1]
                 else:
                     clean_script = truncated + "..."
@@ -407,25 +414,44 @@ class VideoAnalysisHandler:
             logger.error(f"Error synthesizing script: {e}")
             return None
     
-    async def _send_analysis_blocks(self, message: Message, analysis_result: str) -> None:
+    async def _send_analysis_blocks(self, message: Message, analysis_result: str, language: str = 'ru') -> None:
         """
         Send analysis result as separate blocks.
         
         Args:
             message: Telegram message object to reply to
             analysis_result: Full analysis text to split into blocks
+            language: Language code to determine section headers
         """
         try:
             # Split the analysis into blocks based on headers
             blocks = []
             
-            # Find each section by its header
-            sections = [
-                ("📋 **ОБЩЕЕ ОПИСАНИЕ:**", "⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**"),
-                ("⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**", "🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**"),
-                ("🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**", "📝 **ЗАКЛЮЧЕНИЕ:**"),
-                ("📝 **ЗАКЛЮЧЕНИЕ:**", None)
-            ]
+            # Define section headers for different languages
+            if language == 'en':
+                sections = [
+                    ("📋 **GENERAL DESCRIPTION:**", "⏰ **TIMELINE BREAKDOWN:**"),
+                    ("⏰ **TIMELINE BREAKDOWN:**", "🎯 **KEY MOMENTS:**"),
+                    ("🎯 **KEY MOMENTS:**", "📝 **CONCLUSION:**"),
+                    ("📝 **CONCLUSION:**", None)
+                ]
+                fallback_header = "🎬 **VIDEO ANALYSIS**"
+            elif language == 'es':
+                sections = [
+                    ("📋 **DESCRIPCIÓN GENERAL:**", "⏰ **DESGLOSE TEMPORAL:**"),
+                    ("⏰ **DESGLOSE TEMPORAL:**", "🎯 **MOMENTOS CLAVE:**"),
+                    ("🎯 **MOMENTOS CLAVE:**", "📝 **CONCLUSIÓN:**"),
+                    ("📝 **CONCLUSIÓN:**", None)
+                ]
+                fallback_header = "🎬 **ANÁLISIS DE VIDEO**"
+            else:  # Default to Russian
+                sections = [
+                    ("📋 **ОБЩЕЕ ОПИСАНИЕ:**", "⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**"),
+                    ("⏰ **РАСКАДРОВКА ПО ВРЕМЕНИ:**", "🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**"),
+                    ("🎯 **КЛЮЧЕВЫЕ МОМЕНТЫ:**", "📝 **ЗАКЛЮЧЕНИЕ:**"),
+                    ("📝 **ЗАКЛЮЧЕНИЕ:**", None)
+                ]
+                fallback_header = "🎬 **АНАЛИЗ ВИДЕО**"
             
             for start_marker, end_marker in sections:
                 start_pos = analysis_result.find(start_marker)
@@ -444,7 +470,7 @@ class VideoAnalysisHandler:
             
             # If no blocks found, send as single message
             if not blocks:
-                await message.reply_text(f"🎬 **АНАЛИЗ ВИДЕО**\n\n{analysis_result}", parse_mode=None)
+                await message.reply_text(f"{fallback_header}\n\n{analysis_result}", parse_mode=None)
                 return
             
             # Send each block as separate message
@@ -455,8 +481,14 @@ class VideoAnalysisHandler:
                 
         except Exception as e:
             logger.error(f"Error sending analysis blocks: {e}")
-            # Fallback to single message
-            await message.reply_text(f"🎬 **АНАЛИЗ ВИДЕО**\n\n{analysis_result}", parse_mode=None)
+            # Fallback to single message with appropriate header
+            if language == 'en':
+                fallback_header = "🎬 **VIDEO ANALYSIS**"
+            elif language == 'es':
+                fallback_header = "🎬 **ANÁLISIS DE VIDEO**"
+            else:
+                fallback_header = "🎬 **АНАЛИЗ ВИДЕО**"
+            await message.reply_text(f"{fallback_header}\n\n{analysis_result}", parse_mode=None)
 
 class MessageHandler:
     """Handler for different types of messages."""

@@ -175,15 +175,15 @@ class VoiceHandler:
                 return None
             
             # Limit length for TTS with smarter truncation
-            if len(clean_script) > 4000:
+            if len(clean_script) > 8000:  # Increased from 4000 to 8000 characters
                 # Try to find a good break point near the limit
-                truncated = clean_script[:4000]
+                truncated = clean_script[:8000]  # Increased from 4000 to 8000
                 last_sentence = max(
                     truncated.rfind('.'),
                     truncated.rfind('!'),
                     truncated.rfind('?')
                 )
-                if last_sentence > 3500:  # Only truncate at sentence if it's not too short
+                if last_sentence > 7000:  # Increased from 3500 to 7000 (Only truncate at sentence if it's not too short)
                     clean_script = truncated[:last_sentence + 1]
                 else:
                     clean_script = truncated + "..."
